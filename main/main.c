@@ -101,6 +101,8 @@ void app_main(void)
         ESP_LOGI(TAG, "MFRC522 initialized successfully!");
     }
 
+    vTaskDelay(pdMS_TO_TICKS(100));
+
     ESP_LOGI(TAG, "Ready: press button on GPIO %d to trigger scan or approach proximity sensor.", BUTTON_PIN);
 
     // --- Main task loop ---
@@ -151,7 +153,20 @@ void app_main(void)
                 printf("%02X ", uid[i]);
             }
             printf("\n");
-            vTaskDelay(pdMS_TO_TICKS(1000));  // debounce (avoid spamming)
+
+            uint8_t authorized_uid[] = {0x1A, 0x83, 0x26, 0x03, 0xBC};
+            bool match = (uid_len == 5);
+            for (int i = 0; i < 5 && match; i++) {
+                if (uid[i] != authorized_uid[i]) match = false;
+            }
+
+            if (match) {
+                printf("💳 Payment Successful!\n");
+            } else {
+                printf("🚫 Payment Declined. Try another card.\n");
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(500)); 
         }
 
         vTaskDelay(pdMS_TO_TICKS(50));

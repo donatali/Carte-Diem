@@ -6,4 +6,5 @@ idf_component_register(
         "interfaces/mfrc522.c"
     INCLUDE_DIRS
         "."
+        "interfaces"
 )
