@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "bootloader",
-    "project_version":    "v6.0-dev-527-gadcbdd7da4",
+    "project_version":    "v5.5.1",
     "project_path":       "/Users/jinwookshin/esp/esp-idf/components/bootloader/subproject",
     "idf_path":           "/Users/jinwookshin/esp/esp-idf",
     "build_dir":          "/Users/jinwookshin/Desktop/473/integration/build/bootloader",
@@ -11,7 +11,7 @@
     "app_elf":            "bootloader.elf",
     "app_bin":            "bootloader.bin",
     "build_type":         "flash_app",
-    "git_revision":       "v6.0-dev-527-gadcbdd7da4",
+    "git_revision":       "v5.5.1",
     "target":             "esp32s3",
     "rev":                "",
     "min_rev":            "0",
@@ -310,7 +310,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "/Users/jinwookshin/Desktop/473/integration/build/bootloader/esp-idf/soc/libsoc.a",
-            "sources": [ "/Users/jinwookshin/esp/esp-idf/components/soc/lldesc.c", "/Users/jinwookshin/esp/esp-idf/components/soc/dport_access_common.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/interrupts.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/gpio_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/uart_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/adc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/dedic_gpio_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/gdma_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/spi_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/ledc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/pcnt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/rmt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/sdm_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/i2s_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/i2c_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/temperature_sensor_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/timer_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/lcd_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/mcpwm_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/mpi_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/sdmmc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/touch_sensor_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/twai_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/wdt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/usb_dwc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/rtc_io_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/power_supply_periph.c" ],
+            "sources": [ "/Users/jinwookshin/esp/esp-idf/components/soc/lldesc.c", "/Users/jinwookshin/esp/esp-idf/components/soc/dport_access_common.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/interrupts.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/gpio_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/uart_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/adc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/dedic_gpio_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/gdma_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/spi_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/ledc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/pcnt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/rmt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/sdm_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/i2s_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/i2c_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/temperature_sensor_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/timer_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/lcd_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/mcpwm_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/mpi_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/sdmmc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/touch_sensor_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/twai_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/wdt_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/usb_dwc_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/rtc_io_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/cam_periph.c", "/Users/jinwookshin/esp/esp-idf/components/soc/esp32s3/power_supply_periph.c" ],
             "include_dirs": [ "include", "esp32s3", "esp32s3/include", "esp32s3/register" ]
         },
         "spi_flash": {
@@ -729,18 +729,6 @@
             "managed_priv_reqs": [],
             "include_dirs": [ "include" ]
         },
-        "esp_driver_sd_intf": {
-            "alias": "idf::esp_driver_sd_intf",
-            "target": "___idf_esp_driver_sd_intf",
-            "prefix": "idf",
-            "dir": "/Users/jinwookshin/esp/esp-idf/components/esp_driver_sd_intf",
-            "lib": "__idf_esp_driver_sd_intf",
-            "reqs": [],
-            "priv_reqs": [ "sdmmc" ],
-            "managed_reqs": [],
-            "managed_priv_reqs": [],
-            "include_dirs": [ "include" ]
-        },
         "esp_driver_sdio": {
             "alias": "idf::esp_driver_sdio",
             "target": "___idf_esp_driver_sdio",
@@ -771,11 +759,11 @@
             "prefix": "idf",
             "dir": "/Users/jinwookshin/esp/esp-idf/components/esp_driver_sdmmc",
             "lib": "__idf_esp_driver_sdmmc",
-            "reqs": [ "esp_driver_sd_intf", "sdmmc", "esp_driver_gpio" ],
+            "reqs": [ "sdmmc", "esp_driver_gpio" ],
             "priv_reqs": [ "esp_timer", "esp_pm", "esp_mm" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "include_dirs": [ "include", "legacy/include" ]
+            "include_dirs": [ "include" ]
         },
         "esp_driver_sdspi": {
             "alias": "idf::esp_driver_sdspi",

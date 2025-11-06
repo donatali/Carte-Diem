@@ -219,7 +219,7 @@ CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 CMAKE_PROJECT_NAME:STATIC=barcode_scanner_freertos
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION:STATIC=3.6.3
+CMAKE_PROJECT_VERSION:STATIC=3.6.4
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_MAJOR:STATIC=3
@@ -228,7 +228,7 @@ CMAKE_PROJECT_VERSION_MAJOR:STATIC=3
 CMAKE_PROJECT_VERSION_MINOR:STATIC=6
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION_PATCH:STATIC=3
+CMAKE_PROJECT_VERSION_PATCH:STATIC=4
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_TWEAK:STATIC=
@@ -353,7 +353,7 @@ Mbed TLS_IS_TOP_LEVEL:STATIC=OFF
 Mbed TLS_SOURCE_DIR:STATIC=/Users/jinwookshin/esp/esp-idf/components/mbedtls/mbedtls
 
 //No help, variable specified on the command line.
-PYTHON:UNINITIALIZED=/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/bin/python
+PYTHON:UNINITIALIZED=/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/bin/python
 
 //No help, variable specified on the command line.
 PYTHON_DEPS_CHECKED:UNINITIALIZED=1
@@ -552,7 +552,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=122
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=121
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
@@ -602,7 +602,7 @@ C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS:INTERNAL=1
 //Details about finding Git
 FIND_PACKAGE_MESSAGE_DETAILS_Git:INTERNAL=[/opt/homebrew/bin/git][v2.49.0()]
 //Details about finding Python3
-FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/bin/python][found components: Interpreter ][v3.11.14()]
+FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/bin/python][found components: Interpreter ][v3.12.2()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //ADVANCED property for variable: GIT_EXECUTABLE
@@ -613,10 +613,10 @@ _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=/usr/local
 _Python3_Compiler_REASON_FAILURE:INTERNAL=
 //Development reason failure
 _Python3_Development_REASON_FAILURE:INTERNAL=
-_Python3_EXECUTABLE:INTERNAL=/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/bin/python
+_Python3_EXECUTABLE:INTERNAL=/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/bin/python
 //Python3 Properties
-_Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;11;14;32;64;;;abi3;/Users/jinwookshin/anaconda3/envs/cartediem/lib/python3.11;/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/lib/python3.11;/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/lib/python3.11/site-packages;/Users/jinwookshin/.espressif/python_env/idf6.0_py3.11_env/lib/python3.11/site-packages
-_Python3_INTERPRETER_SIGNATURE:INTERNAL=efa6430ec7716760d2326df3aaeabc8e
+_Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;2;32;64;;;abi3;/Users/jinwookshin/anaconda3/lib/python3.12;/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/lib/python3.12;/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/lib/python3.12/site-packages;/Users/jinwookshin/.espressif/python_env/idf5.5_py3.12_env/lib/python3.12/site-packages
+_Python3_INTERPRETER_SIGNATURE:INTERNAL=ea672024173bd0c27c145685d654bd98
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
 

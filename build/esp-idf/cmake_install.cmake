@@ -319,11 +319,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/cmake_install.cmake")
-endif()
-
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
   include("/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sdmmc/cmake_install.cmake")
 endif()
 

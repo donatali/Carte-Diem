@@ -8,6 +8,7 @@
 #include "interfaces/barcode.h"
 #include "interfaces/proximity_sensor.h"
 #include "interfaces/mfrc522.h"
+#include "interfaces/ble_barcode_nimble.h"  // Add NimBLE BLE interface
 
 
 // I2C: Proximity Sensor, IMU, 
@@ -57,6 +58,14 @@ static void IRAM_ATTR proximity_isr(void *arg)
 
 void app_main(void)
 {
+    // Initialize BLE first (NimBLE version)
+    esp_err_t ble_ret = ble_barcode_init("ESP32_Barcode_Scanner");
+    if (ble_ret != ESP_OK) {
+        ESP_LOGE(TAG, "BLE initialization failed, but continuing...");
+    } else {
+        ESP_LOGI(TAG, "BLE barcode service initialized (NimBLE)");
+    }
+
     barcode_init(&scanner, UART_NUM_1, BARCODE_TX_PIN, BARCODE_RX_PIN, true);
     barcode_set_manual_mode(&scanner);
     ESP_LOGI(TAG, "Barcode scanner ready in manual mode");
@@ -104,6 +113,7 @@ void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(100));
 
     ESP_LOGI(TAG, "Ready: press button on GPIO %d to trigger scan or approach proximity sensor.", BUTTON_PIN);
+    ESP_LOGI(TAG, "BLE Status: %s", ble_barcode_is_connected() ? "Connected" : "Waiting for connection...");
 
     // --- Main task loop ---
     uint8_t uid[10], uid_len = 0;
@@ -139,6 +149,18 @@ void app_main(void)
         if (barcode_read_line(&scanner, buf, sizeof(buf)))
         {
             ESP_LOGI(TAG, "Scanned: %s", buf);
+            
+            // Send barcode data over BLE
+            if (ble_barcode_is_connected()) {
+                esp_err_t send_ret = ble_barcode_send(buf);
+                if (send_ret == ESP_OK) {
+                    ESP_LOGI(TAG, "✓ Barcode sent via BLE");
+                } else {
+                    ESP_LOGW(TAG, "✗ Failed to send barcode via BLE");
+                }
+            } else {
+                ESP_LOGW(TAG, "⚠ BLE not connected - barcode not sent");
+            }
             
             if (continuous_mode) {
                 ESP_LOGI(TAG, "Barcode read → switching back to manual scan mode");

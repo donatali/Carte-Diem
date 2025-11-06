@@ -4,7 +4,15 @@ idf_component_register(
         "interfaces/barcode.c"
         "interfaces/proximity_sensor.c"
         "interfaces/mfrc522.c"
+        "interfaces/ble_barcode_nimble.c"
     INCLUDE_DIRS
         "."
         "interfaces"
+    REQUIRES 
+        driver
+        esp_timer
+        nvs_flash
+        bt
+    PRIV_REQUIRES
+        esp_adc
 )

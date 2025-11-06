@@ -463,6 +463,7 @@
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_gdbstub/CMakeFiles/install.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_gdbstub/CMakeFiles/install/local.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_gdbstub/CMakeFiles/install/strip.dir
+/Users/jinwookshin/Desktop/473/integration/build/esp-idf/bt/CMakeFiles/__idf_bt.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/bt/CMakeFiles/edit_cache.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/bt/CMakeFiles/rebuild_cache.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/bt/CMakeFiles/list_install_components.dir
@@ -524,13 +525,6 @@
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/sdmmc/CMakeFiles/install.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/sdmmc/CMakeFiles/install/local.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/sdmmc/CMakeFiles/install/strip.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/__idf_esp_driver_sd_intf.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/edit_cache.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/rebuild_cache.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/list_install_components.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/install.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/install/local.dir
-/Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sd_intf/CMakeFiles/install/strip.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sdmmc/CMakeFiles/__idf_esp_driver_sdmmc.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sdmmc/CMakeFiles/edit_cache.dir
 /Users/jinwookshin/Desktop/473/integration/build/esp-idf/esp_driver_sdmmc/CMakeFiles/rebuild_cache.dir
