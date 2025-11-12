@@ -5,9 +5,6 @@
 
 static const char* TAG = "ProximitySensor";
 
-// I2C timeout in milliseconds
-#define I2C_TIMEOUT_MS 1000
-
 // Helper function declarations
 static bool proximity_sensor_write_register(ProximitySensor* sensor, uint8_t reg, uint8_t value);
 static bool proximity_sensor_read_register(ProximitySensor* sensor, uint8_t reg, uint8_t* value);
@@ -21,7 +18,7 @@ ProximitySensor* proximity_sensor_create(uint8_t int_pin, uint8_t threshold, boo
         return NULL;
     }
 
-    sensor->i2c_port = I2C_NUM_0;
+    sensor->dev_handle = NULL;
     sensor->int_pin = int_pin;
     sensor->threshold = threshold;
     sensor->verbose = verbose;
@@ -35,42 +32,26 @@ void proximity_sensor_destroy(ProximitySensor* sensor) {
         return;
     }
 
-    if (sensor->connected) {
-        i2c_driver_delete(sensor->i2c_port);
-    }
-
+    // Device handle cleanup is handled by the bus, not here
     free(sensor);
 }
 
-bool proximity_sensor_begin(ProximitySensor* sensor, i2c_port_t i2c_port, int sda_pin, int scl_pin, uint32_t clk_speed) {
-    if (sensor == NULL) {
+bool proximity_sensor_begin(ProximitySensor* sensor, i2c_master_bus_handle_t bus_handle) {
+    if (sensor == NULL || bus_handle == NULL) {
         return false;
     }
 
-    sensor->i2c_port = i2c_port;
+    // Configure I2C device on the shared bus
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = APDS9960_I2C_ADDR,
+        .scl_speed_hz = 400000,
+    };
 
-    // Configure I2C
-    i2c_config_t conf = {};
-    conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = sda_pin;
-    conf.scl_io_num = scl_pin;
-    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.master.clk_speed = clk_speed;
-    conf.clk_flags = 0;
-
-    esp_err_t err = i2c_param_config(i2c_port, &conf);
+    esp_err_t err = i2c_master_bus_add_device(bus_handle, &dev_cfg, &sensor->dev_handle);
     if (err != ESP_OK) {
         if (sensor->verbose) {
-            ESP_LOGE(TAG, "Failed to configure I2C parameters: %s", esp_err_to_name(err));
-        }
-        return false;
-    }
-
-    err = i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
-    if (err != ESP_OK) {
-        if (sensor->verbose) {
-            ESP_LOGE(TAG, "Failed to install I2C driver: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "Failed to add device to I2C bus: %s", esp_err_to_name(err));
         }
         return false;
     }
@@ -223,19 +204,13 @@ uint8_t proximity_sensor_read(ProximitySensor* sensor) {
 }
 
 void proximity_sensor_clear_interrupt(ProximitySensor* sensor) {
-    if (sensor == NULL) {
+    if (sensor == NULL || sensor->dev_handle == NULL) {
         return;
     }
 
-    // Clear interrupt by writing to PICLEAR register
-    // This is a special transaction - just address the register
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (APDS9960_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, APDS9960_AICLEAR, true);
-    i2c_master_stop(cmd);
-    i2c_master_cmd_begin(sensor->i2c_port, cmd, pdMS_TO_TICKS(I2C_TIMEOUT_MS));
-    i2c_cmd_link_delete(cmd);
+    // Clear interrupt by writing to AICLEAR register
+    uint8_t reg = APDS9960_AICLEAR;
+    i2c_master_transmit(sensor->dev_handle, &reg, 1, -1);
 }
 
 void proximity_sensor_enable_interrupt(ProximitySensor* sensor) {
@@ -312,15 +287,12 @@ bool proximity_sensor_set_pulse(ProximitySensor* sensor, uint8_t pulse_length, u
 // Helper function implementations
 
 static bool proximity_sensor_write_register(ProximitySensor* sensor, uint8_t reg, uint8_t value) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (APDS9960_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg, true);
-    i2c_master_write_byte(cmd, value, true);
-    i2c_master_stop(cmd);
+    if (sensor == NULL || sensor->dev_handle == NULL) {
+        return false;
+    }
 
-    esp_err_t ret = i2c_master_cmd_begin(sensor->i2c_port, cmd, pdMS_TO_TICKS(I2C_TIMEOUT_MS));
-    i2c_cmd_link_delete(cmd);
+    uint8_t write_buf[2] = {reg, value};
+    esp_err_t ret = i2c_master_transmit(sensor->dev_handle, write_buf, sizeof(write_buf), -1);
 
     if (ret != ESP_OK && sensor->verbose) {
         ESP_LOGE(TAG, "Failed to write register 0x%02X: %s", reg, esp_err_to_name(ret));
@@ -330,17 +302,11 @@ static bool proximity_sensor_write_register(ProximitySensor* sensor, uint8_t reg
 }
 
 static bool proximity_sensor_read_register(ProximitySensor* sensor, uint8_t reg, uint8_t* value) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (APDS9960_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg, true);
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (APDS9960_I2C_ADDR << 1) | I2C_MASTER_READ, true);
-    i2c_master_read_byte(cmd, value, I2C_MASTER_NACK);
-    i2c_master_stop(cmd);
+    if (sensor == NULL || sensor->dev_handle == NULL || value == NULL) {
+        return false;
+    }
 
-    esp_err_t ret = i2c_master_cmd_begin(sensor->i2c_port, cmd, pdMS_TO_TICKS(I2C_TIMEOUT_MS));
-    i2c_cmd_link_delete(cmd);
+    esp_err_t ret = i2c_master_transmit_receive(sensor->dev_handle, &reg, 1, value, 1, -1);
 
     if (ret != ESP_OK && sensor->verbose) {
         ESP_LOGE(TAG, "Failed to read register 0x%02X: %s", reg, esp_err_to_name(ret));

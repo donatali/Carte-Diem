@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -106,7 +106,7 @@
 
 // Opaque handle for proximity sensor instance
 typedef struct ProximitySensor {
-    i2c_port_t i2c_port;
+    i2c_master_dev_handle_t dev_handle;
     uint8_t int_pin;
     uint8_t threshold;
     bool verbose;
@@ -116,7 +116,7 @@ typedef struct ProximitySensor {
 // Function declarations
 ProximitySensor* proximity_sensor_create(uint8_t int_pin, uint8_t threshold, bool verbose);
 void proximity_sensor_destroy(ProximitySensor* sensor);
-bool proximity_sensor_begin(ProximitySensor* sensor, i2c_port_t i2c_port, int sda_pin, int scl_pin, uint32_t clk_speed);
+bool proximity_sensor_begin(ProximitySensor* sensor, i2c_master_bus_handle_t bus_handle);
 bool proximity_sensor_is_connected(const ProximitySensor* sensor);
 uint8_t proximity_sensor_read(ProximitySensor* sensor);
 void proximity_sensor_clear_interrupt(ProximitySensor* sensor);

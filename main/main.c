@@ -12,6 +12,8 @@
 #include "interfaces/ble_barcode_nimble.h"
 #include "interfaces/loadcells.h"
 #include "interfaces/cart_rfid.h"
+#include "interfaces/imu.h"
+#include "driver/i2c_master.h"
 
 // I2C: Proximity Sensor, IMU, 
 #define SCL_PIN GPIO_NUM_9
@@ -44,6 +46,8 @@
 
 static barcode_t scanner;
 static ProximitySensor* proximity_sensor = NULL;
+static ICM20948_t imu_sensor;
+static i2c_master_bus_handle_t i2c_bus_handle = NULL;
 static mfrc522_t paymenter;
 static LoadCell* load_cell = NULL;
 
@@ -114,6 +118,25 @@ static void handle_ble_command(const char *data, uint16_t len)
             cart_rfid_scan(cart_reader); // TODO: Finish implementation
             break;
 
+        case 'I': // IMU:
+            if("IMU_CHECK_ACTIVITY" == data) {
+                ESP_LOGI(TAG, "BLE Command: Checking IMU activity");
+                if(icm20948_is_moving(&imu_sensor)) {
+                    ESP_LOGI(TAG, "IMU reports: Cart is moving");
+                    // Send BLE notification
+                } else {
+                    ESP_LOGI(TAG, "IMU reports: Cart is idle");
+                    // Send BLE notification
+                }
+            }
+            else if("IMU_GET_HEADING" == data) {
+                ESP_LOGI(TAG, "BLE Command: Getting IMU heading");
+                float heading = icm20948_compute_heading(&imu_sensor);
+                char heading_str[32];
+                snprintf(heading_str, sizeof(heading_str), "%.2f", heading);
+                // Send BLE notification with heading
+            }
+            break;
         default:
             ESP_LOGW(TAG, "BLE Command: Unknown command '%c' (full: %s)", data[0], data);
             ble_send_barcode("ERR_UNKNOWN_CMD");
@@ -121,7 +144,34 @@ static void handle_ble_command(const char *data, uint16_t len)
     }
 }
 
+// ===== IMU Callbacks =====
+
+static void imu_idle_callback(void)
+{
+    ESP_LOGI(TAG, "⏱ IMU: Cart idle for 5 minutes - no motion detected");
+    // TODO: send BLE notifiation
+}
+
 // ===== Individual Setup Functions =====
+
+static void i2c_setup(void)
+{
+    ESP_LOGI(TAG, "Initializing I2C bus...");
+    i2c_master_bus_config_t i2c_bus_cfg = {
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0,
+        .trans_queue_depth = 0,
+        .flags = {
+            .enable_internal_pullup = true,
+        },
+        .sda_io_num = SDA_PIN,
+        .scl_io_num = SCL_PIN,
+        .lclk_speed_hz = 100000,
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_handle));
+    ESP_LOGI(TAG, "I2C master bus initialized");
+}
 
 static void ble_setup(void)
 {
@@ -144,18 +194,6 @@ static void barcode_setup(void)
     ESP_LOGI(TAG, "Barcode scanner ready in manual mode");
 }
 
-static void proximity_setup(void)
-{
-    ESP_LOGI(TAG, "Initializing proximity sensor...");
-    proximity_sensor = proximity_sensor_create(PROXIMITY_INT_PIN, PROXIMITY_THRESHOLD, false);
-    if (proximity_sensor == NULL || !proximity_sensor_begin(proximity_sensor, I2C_NUM_0, SDA_PIN, SCL_PIN, 100000)) {
-        ESP_LOGE(TAG, "Failed to initialize proximity sensor");
-        return;
-    }
-    proximity_sensor_enable_interrupt(proximity_sensor);
-    ESP_LOGI(TAG, "Proximity sensor ready with threshold %d", PROXIMITY_THRESHOLD);
-}
-
 static void button_setup(void)
 {
     ESP_LOGI(TAG, "Initializing button...");
@@ -172,6 +210,28 @@ static void button_setup(void)
     gpio_install_isr_service(0);
     gpio_isr_handler_add(BUTTON_PIN, button_isr, NULL);
     ESP_LOGI(TAG, "Button ready on GPIO %d", BUTTON_PIN);
+}
+
+static void proximity_setup(void)
+{
+    ESP_LOGI(TAG, "Initializing proximity sensor...");
+    proximity_sensor = proximity_sensor_create(PROXIMITY_INT_PIN, PROXIMITY_THRESHOLD, false);
+    if (proximity_sensor == NULL || !proximity_sensor_begin(proximity_sensor, i2c_bus_handle)) {
+        ESP_LOGE(TAG, "Failed to initialize proximity sensor");
+        return;
+    }
+    proximity_sensor_enable_interrupt(proximity_sensor);
+    ESP_LOGI(TAG, "Proximity sensor ready with threshold %d", PROXIMITY_THRESHOLD);
+}
+
+static void imu_setup(void){
+    ESP_LOGI(TAG, "Initializing IMU...");
+    icm20948_init(&imu_sensor, i2c_bus_handle);
+    ESP_LOGI(TAG, "IMU initialized successfully");
+
+    // Start FreeRTOS-based activity monitoring with 5-minute idle timeout
+    icm20948_start_activity_monitor(&imu_sensor, imu_idle_callback);
+    ESP_LOGI(TAG, "IMU activity monitor started (5-minute idle timeout)");
 }
 
 static void proximity_interrupt_setup(void)
@@ -227,12 +287,16 @@ static void setup(void)
 {
     ESP_LOGI(TAG, "Starting system initialization...");
 
+    // Initialize I2C bus first (used by proximity and IMU)
+    i2c_setup();
+
     ble_setup();
     barcode_setup();
     button_setup();
 
     proximity_setup();
     proximity_interrupt_setup();
+    imu_setup();
     payment_setup();
     loadcell_setup();
     cart_rfid_setup();
@@ -251,13 +315,14 @@ void app_main(void)
     // --- Main task loop ---
     uint8_t uid[10], uid_len = 0;
     char buf[128];
-    float produce_weight = 0; 
+    float produce_weight = 0;
     char *produce_weight_str = buf;
 
     while (1)
-    {       
+    {
         uint32_t evt;
         
+        // button press
         if (xQueueReceive(button_evt_queue, &evt, pdMS_TO_TICKS(10)))
         {           
             if (!continuous_mode) {
@@ -266,6 +331,7 @@ void app_main(void)
             }
         }
 
+        // proximity interrupt
         if (xQueueReceive(proximity_evt_queue, &evt, pdMS_TO_TICKS(10)))
         {
             uint8_t proximity_value = proximity_sensor_read(proximity_sensor);
@@ -280,6 +346,7 @@ void app_main(void)
             proximity_sensor_clear_interrupt(proximity_sensor);
         }
 
+        // barcode reading
         if (barcode_read_line(&scanner, buf, sizeof(buf)))
         {
             ESP_LOGI(TAG, "Scanned: %s", buf);
@@ -303,6 +370,7 @@ void app_main(void)
             }
         }
 
+        // payment card reading
         if (payment_mode) {
             if (mfrc522_read_uid(&paymenter, uid, &uid_len) == ESP_OK && uid_len > 0) {
                 printf("[MAIN] Payment card detected: ");
