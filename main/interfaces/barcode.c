@@ -25,9 +25,25 @@ void barcode_init(barcode_t *scanner, uart_port_t uart_num, int tx_pin, int rx_p
         .source_clk = UART_SCLK_DEFAULT,
     };
 
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, 2048, 0, 0, NULL, 0));
-    ESP_ERROR_CHECK(uart_param_config(uart_num, &cfg));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    esp_err_t ret;
+
+    ret = uart_driver_install(uart_num, 2048, 0, 0, NULL, 0);
+    if (ret != ESP_OK) {
+        if (verbose) ESP_LOGE(TAG, "Failed to install UART driver: %d", ret);
+        return;
+    }
+
+    ret = uart_param_config(uart_num, &cfg);
+    if (ret != ESP_OK) {
+        if (verbose) ESP_LOGE(TAG, "Failed to configure UART params: %d", ret);
+        return;
+    }
+
+    ret = uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    if (ret != ESP_OK) {
+        if (verbose) ESP_LOGE(TAG, "Failed to set UART pins: %d", ret);
+        return;
+    }
 
     if (scanner->verbose)
         ESP_LOGI(TAG, "✓ Barcode scanner initialized (UART%d)", uart_num);
@@ -37,7 +53,11 @@ void barcode_init(barcode_t *scanner, uart_port_t uart_num, int tx_pin, int rx_p
 
 static void send_cmd(barcode_t *scanner, const uint8_t *cmd, size_t len) {
     uart_write_bytes(scanner->uart_num, (const char*)cmd, len);
-    uart_wait_tx_done(scanner->uart_num, pdMS_TO_TICKS(10));
+    esp_err_t ret = uart_wait_tx_done(scanner->uart_num, pdMS_TO_TICKS(100));
+    if (ret != ESP_OK) {
+        if (scanner->verbose)
+            ESP_LOGW(TAG, "UART TX timeout (continuing anyway)");
+    }
 }
 
 void barcode_set_manual_mode(barcode_t *scanner) {

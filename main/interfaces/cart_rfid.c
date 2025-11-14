@@ -188,8 +188,13 @@ static void cart_rfid_scan_internal(cart_rfid_reader_t *reader) {
     
     // Process any remaining burst
     cart_rfid_process_burst(reader);
-    
+
     ESP_LOGI(TAG, "Scan complete: %d unique tags found", reader->unique_tag_count);
+
+    // Log each unique tag
+    for (int i = 0; i < reader->unique_tag_count; i++) {
+        ESP_LOGI(TAG, "Tag[%d]: %s (RSSI: %d)", i, reader->unique_tags[i].tag, reader->unique_tags[i].rssi);
+    }
 }
 
 /**

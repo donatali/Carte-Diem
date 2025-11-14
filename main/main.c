@@ -29,22 +29,22 @@
 #define PAYMENT_CS_PIN   GPIO_NUM_10
 #define PAYMENT_RST_PIN  GPIO_NUM_14
 
-#define TOP_LOAD_DATA_PIN GPIO_NUM_40
-#define TOP_LOAD_CLK_PIN GPIO_NUM_41
-
-// UART: Barcode scanner, Item RFID, Customer RFID
-#define BARCODE_TX_PIN GPIO_NUM_38
-#define BARCODE_RX_PIN GPIO_NUM_39
-
-// #define TOP_LOAD_DATA_PIN GPIO_NUM_38
-// #define TOP_LOAD_CLK_PIN GPIO_NUM_39
-
-// #define BOTTOM_LOAD_DATA_PIN GPIO_NUM_40
-// #define BOTTOM_LOAD_CLK_PIN GPIO_NUM_41
+// #define TOP_LOAD_DATA_PIN GPIO_NUM_40
+// #define TOP_LOAD_CLK_PIN GPIO_NUM_41
 
 // // UART: Barcode scanner, Item RFID, Customer RFID
-// #define BARCODE_TX_PIN GPIO_NUM_43
-// #define BARCODE_RX_PIN GPIO_NUM_44
+// #define BARCODE_TX_PIN GPIO_NUM_38
+// #define BARCODE_RX_PIN GPIO_NUM_39
+
+#define TOP_LOAD_DATA_PIN GPIO_NUM_38
+#define TOP_LOAD_CLK_PIN GPIO_NUM_39
+
+#define BOTTOM_LOAD_DATA_PIN GPIO_NUM_40
+#define BOTTOM_LOAD_CLK_PIN GPIO_NUM_41
+
+// UART: Barcode scanner, Item RFID, Customer RFID
+#define BARCODE_TX_PIN GPIO_NUM_1
+#define BARCODE_RX_PIN GPIO_NUM_2
 
 #define CART_RFID_UART_PORT UART_NUM_2
 #define CART_RFID_TX_PIN GPIO_NUM_5
@@ -71,6 +71,7 @@ static QueueHandle_t imu_idle_evt_queue = NULL;
 static TaskHandle_t payment_task_handle = NULL;
 
 static bool continuous_mode = false;
+static bool payment_mode = false;
 
 static void IRAM_ATTR button_isr(void *arg)
 {
@@ -90,7 +91,7 @@ void on_cart_scan_complete(const cart_rfid_tag_t *tags, int count) {
     ESP_LOGI(TAG, "Found %d items in cart", count);
 
     // Get cart weight
-    float cart_weight = load_cell_display_pounds(cart_load_cell);
+    float cart_weight = load_cell_display_pounds(produce_load_cell);
 
     // Build verification string: "weight, num_tags, tag1, tag2, tag3, ..."
     char verification_msg[512] = {0};
@@ -156,7 +157,8 @@ static void handle_ble_command(const char *data, uint16_t len)
 
         case 'P':  // Payment module activation
             ESP_LOGI(TAG, "BLE Command: Checking payment status - enabling payment module");
-            xTaskNotifyGive(payment_task_handle);
+            payment_mode = true;
+            ESP_LOGI(TAG, "Payment task: Waiting for card...");
             break;
 
         case 'C':  // Cart RFID:
@@ -199,44 +201,6 @@ static void handle_imu_idle_event(void)
     ble_send_misc_data("[IMU] IDLE");
 }
 
-// ===== Payment Task =====
-
-static void payment_task(void *pvParameters)
-{
-    uint8_t authorized_uid[] = {0x1A, 0x83, 0x26, 0x03, 0xBC};
-
-    while (1) {
-        // Wait for payment mode to be enabled (task notification)
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-        uint8_t uid[10];
-        size_t uid_len = 0;
-
-        ESP_LOGI(TAG, "Payment task: Waiting for card...");
-
-        if (mfrc522_read_uid(&paymenter, uid, &uid_len) == ESP_OK && uid_len > 0) {
-            printf("[MAIN] Payment card detected: ");
-            for (int i = 0; i < uid_len; i++) {
-                printf("%02X ", uid[i]);
-            }
-            printf("\n");
-
-            bool match = (uid_len == 5);
-            for (int i = 0; i < 5 && match; i++) {
-                if (uid[i] != authorized_uid[i]) match = false;
-            }
-
-            if (match) {
-                printf("💳 Payment Successful!\n");
-                ble_send_payment_status("1");
-            } else {
-                printf("🚫 Payment Declined. Try another card.\n");
-                ble_send_payment_status("0");
-            }
-        }
-    }
-}
-
 // ===== Individual Setup Functions =====
 
 static void i2c_setup(void)
@@ -273,7 +237,7 @@ static void barcode_setup(void)
 {
     ESP_LOGI(TAG, "Initializing barcode scanner...");
     barcode_init(&scanner, UART_NUM_1, BARCODE_TX_PIN, BARCODE_RX_PIN, true);
-    barcode_set_manual_mode(&scanner);
+    // Note: barcode_set_manual_mode is called within barcode_init
     ESP_LOGI(TAG, "Barcode scanner ready in manual mode");
 }
 
@@ -319,7 +283,7 @@ static void imu_setup(void){
     }
 
     // Start IMU monitor first
-    icm20948_start_activity_monitor(&imu_sensor, imu_idle_evt_queue);
+    // icm20948_start_activity_monitor(&imu_sensor, imu_idle_evt_queue);
 
     // Try accel read (but don't exit)
     if(icm20948_read_accel(&imu_sensor) != ESP_OK){
@@ -408,12 +372,8 @@ static void setup(void)
     imu_setup();
     payment_setup();
     produce_loadcell_setup();
-    cart_loadcell_setup();
+    // cart_loadcell_setup();
     cart_rfid_setup();
-
-    // Create payment processing task
-    xTaskCreate(payment_task, "payment_task", 2048, NULL, 5, &payment_task_handle);
-    ESP_LOGI(TAG, "Payment task created");
 
     vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -431,6 +391,7 @@ void app_main(void)
     char buf[128];
     float produce_weight = 0;
     char *produce_weight_str = buf;
+    uint8_t authorized_uid[] = {0x1A, 0x83, 0x26, 0x03, 0xBC};
 
     while (1)
     {
@@ -470,7 +431,7 @@ void app_main(void)
         if (barcode_read_line(&scanner, buf, sizeof(buf)))
         {
             ESP_LOGI(TAG, "Scanned: %s", buf);
-            
+
             // Send barcode data over BLE
             if (ble_is_connected()) {
                 esp_err_t send_ret = ble_send_barcode(buf);
@@ -482,11 +443,38 @@ void app_main(void)
             } else {
                 ESP_LOGW(TAG, "⚠ BLE not connected - barcode not sent");
             }
-            
+
             if (continuous_mode) {
                 ESP_LOGI(TAG, "Barcode read → switching back to manual scan mode");
                 barcode_set_manual_mode(&scanner);
                 continuous_mode = false;
+            }
+        }
+
+        // Payment processing
+        if (payment_mode) {
+
+            if (mfrc522_read_uid(&paymenter, uid, &uid_len) == ESP_OK && uid_len > 0) {
+                printf("[MAIN] Payment card detected: ");
+                for (int i = 0; i < uid_len; i++) {
+                    printf("%02X ", uid[i]);
+                }
+                printf("\n");
+
+                bool match = (uid_len == 5);
+                for (int i = 0; i < 5 && match; i++) {
+                    if (uid[i] != authorized_uid[i]) match = false;
+                }
+
+                if (match) {
+                    printf("💳 Payment Successful!\n");
+                    ble_send_payment_status("1");
+                } else {
+                    printf("🚫 Payment Declined. Try another card.\n");
+                    ble_send_payment_status("0");
+                }
+
+                payment_mode = false;
             }
         }
 

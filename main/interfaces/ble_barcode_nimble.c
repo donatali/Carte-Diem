@@ -51,10 +51,10 @@ static const ble_uuid128_t gatt_svr_chr_misc_uuid =
                      0x6a, 0x48, 0xd4, 0xc4, 0x46, 0x89, 0xce, 0xb8);
 
 // RX characteristic
-// UUID: e36b6c82-1d7e-4589-b289-794fb676b14f
+// UUID: 81de7ab2-7bb5-4a08-91ad-73165d9d2bb0
 static const ble_uuid128_t gatt_svr_chr_rx_uuid =
-    BLE_UUID128_INIT(0x4f, 0xb1, 0x76, 0xb6, 0x4f, 0x79, 0x89, 0xb2,
-                     0x89, 0x45, 0x7e, 0x1d, 0x82, 0x6c, 0x6b, 0xe3);
+    BLE_UUID128_INIT(0xb0, 0x2b, 0x9d, 0x5d, 0x16, 0x73, 0xad, 0x91,
+                     0x08, 0x4a, 0xb5, 0x7b, 0xb2, 0x7a, 0xde, 0x81);
 
 // BLE state
 static bool ble_connected = false;
@@ -125,7 +125,7 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
                 .access_cb = gatt_svr_chr_access_barcode,
                 .flags = BLE_GATT_CHR_F_NOTIFY,
                 .val_handle = &misc_char_handle,
-            }
+            },
             {
                 // RX Characteristic (optional - device receives data from client)
                 .uuid = &gatt_svr_chr_rx_uuid.u,
@@ -166,20 +166,6 @@ static int gatt_svr_chr_access_barcode(uint16_t conn_handle, uint16_t attr_handl
                     if (rc == 0) {
                         rx_data[data_len] = '\0';  // Null terminate
                         ESP_LOGI(TAG, "BLE RX data received: %s", (char *)rx_data);
-
-                        // Send to queue if it exists
-                        if (ble_rx_queue != NULL) {
-                            // Create a message structure
-                            struct {
-                                uint8_t data[512];
-                                uint16_t len;
-                            } rx_msg = {0};
-
-                            memcpy(rx_msg.data, rx_data, data_len);
-                            rx_msg.len = data_len;
-
-                            xQueueSendFromISR(ble_rx_queue, &rx_msg, NULL);
-                        }
 
                         // Call callback if registered
                         if (ble_rx_callback != NULL) {
@@ -358,12 +344,12 @@ static void nimble_host_task(void *param)
 esp_err_t ble_init(const char *name)
 {
     esp_err_t ret;
-    
+
     if (name) {
         strncpy(device_name, name, sizeof(device_name) - 1);
         device_name[sizeof(device_name) - 1] = '\0';
     }
-    
+
     // Initialize NVS
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -371,7 +357,7 @@ esp_err_t ble_init(const char *name)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-    
+
     // Initialize NimBLE
     ESP_ERROR_CHECK(nimble_port_init());
     
@@ -488,11 +474,18 @@ void ble_register_rx_callback(ble_rx_callback_t callback)
     ble_rx_callback = callback;
 
     // Create RX queue if not already created (for queue-based reception)
-    if (ble_rx_queue == NULL) {
-        ble_rx_queue = xQueueCreate(4, sizeof(struct {
+    if (ble_rx_queue == NULL && callback != NULL) {
+        // Define a proper struct type for queue items
+        typedef struct {
             uint8_t data[512];
             uint16_t len;
-        }));
+        } ble_rx_msg_t;
+
+        ble_rx_queue = xQueueCreate(4, sizeof(ble_rx_msg_t));
+        if (ble_rx_queue == NULL) {
+            ESP_LOGE(TAG, "Failed to create BLE RX queue");
+            return;
+        }
     }
 
     if (callback != NULL) {
