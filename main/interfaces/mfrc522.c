@@ -31,6 +31,10 @@
 #define PICC_ANTICOLL   0x93
 
 // --- SPI read/write helpers (fixed shifting macros) ------------------------
+
+/**
+ * @brief Write value to MFRC522 register via SPI
+ */
 static void write_reg(mfrc522_t *dev, uint8_t reg, uint8_t val) {
     uint8_t buf[2] = { MFRC522_WRITE_CMD(reg), val };
     uint8_t rx[2] = {0};
@@ -49,6 +53,9 @@ static void write_reg(mfrc522_t *dev, uint8_t reg, uint8_t val) {
              reg, val, buf[0], rx[0], rx[1]);
 }
 
+/**
+ * @brief Read value from MFRC522 register via SPI
+ */
 static uint8_t read_reg(mfrc522_t *dev, uint8_t reg) {
     uint8_t tx[2] = { MFRC522_READ_CMD(reg), 0x00 };
     uint8_t rx[2] = {0};
@@ -73,22 +80,36 @@ static uint8_t read_reg(mfrc522_t *dev, uint8_t reg) {
 }
 
 // --- Bit manipulation helpers ---------------------------------------------
+
+/**
+ * @brief Set bit mask in MFRC522 register
+ */
 static void set_bit_mask(mfrc522_t *dev, uint8_t reg, uint8_t mask) {
     uint8_t tmp = read_reg(dev, reg);
     write_reg(dev, reg, tmp | mask);
 }
 
+/**
+ * @brief Clear bit mask in MFRC522 register
+ */
 static void clear_bit_mask(mfrc522_t *dev, uint8_t reg, uint8_t mask) {
     uint8_t tmp = read_reg(dev, reg);
     write_reg(dev, reg, tmp & (~mask));
 }
 
 // --- Core functions -------------------------------------------------------
+
+/**
+ * @brief Perform soft reset of MFRC522 chip
+ */
 void mfrc522_reset(mfrc522_t *dev) {
     write_reg(dev, CommandReg, PCD_SOFTRESET);
     vTaskDelay(pdMS_TO_TICKS(50));
 }
 
+/**
+ * @brief Initialize MFRC522 RFID reader over SPI
+ */
 esp_err_t mfrc522_init(mfrc522_t *dev, spi_host_device_t host,
                        gpio_num_t miso, gpio_num_t mosi, gpio_num_t sck,
                        gpio_num_t cs, gpio_num_t rst)
@@ -196,6 +217,9 @@ esp_err_t mfrc522_init(mfrc522_t *dev, spi_host_device_t host,
     return ESP_OK;
 }
 
+/**
+ * @brief Send PICC_REQIDL command to detect cards
+ */
 static esp_err_t picc_request(mfrc522_t *dev, uint8_t *tag_type) {
     write_reg(dev, BitFramingReg, 0x07);
     write_reg(dev, CommandReg, PCD_IDLE);
@@ -222,6 +246,9 @@ static esp_err_t picc_request(mfrc522_t *dev, uint8_t *tag_type) {
     return ESP_OK;
 }
 
+/**
+ * @brief Perform anticollision to get card UID
+ */
 static esp_err_t picc_anticoll(mfrc522_t *dev, uint8_t *uid, uint8_t *uid_len)
 {
     write_reg(dev, BitFramingReg, 0x00);
@@ -285,6 +312,9 @@ static esp_err_t picc_anticoll(mfrc522_t *dev, uint8_t *uid, uint8_t *uid_len)
 
 
 
+/**
+ * @brief Read UID from RFID card in proximity
+ */
 esp_err_t mfrc522_read_uid(mfrc522_t *dev, uint8_t *uid, uint8_t *uid_len) {
     uint8_t tag_type[2];
     if (picc_request(dev, tag_type) != ESP_OK) {

@@ -143,6 +143,9 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
     },
 };
 
+/**
+ * @brief Handle GATT characteristic access for all BLE characteristics
+ */
 static int gatt_svr_chr_access_barcode(uint16_t conn_handle, uint16_t attr_handle,
                                        struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
@@ -181,6 +184,9 @@ static int gatt_svr_chr_access_barcode(uint16_t conn_handle, uint16_t attr_handl
     }
 }
 
+/**
+ * @brief Handle BLE GAP events (connections, disconnections, etc.)
+ */
 static int ble_gap_event(struct ble_gap_event *event, void *arg)
 {
     struct ble_gap_conn_desc desc;
@@ -249,6 +255,9 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
     return 0;
 }
 
+/**
+ * @brief Start BLE advertisement
+ */
 static void ble_advertise(void)
 {
     struct ble_gap_adv_params adv_params;
@@ -297,6 +306,9 @@ static void ble_advertise(void)
     ESP_LOGI(TAG, "Advertising started");
 }
 
+/**
+ * @brief Called when BLE host stack syncs
+ */
 static void ble_on_sync(void)
 {
     int rc;
@@ -329,11 +341,17 @@ static void ble_on_sync(void)
     ble_advertise();
 }
 
+/**
+ * @brief Called when BLE host stack resets
+ */
 static void ble_on_reset(int reason)
 {
     ESP_LOGE(TAG, "Resetting state; reason=%d", reason);
 }
 
+/**
+ * @brief NimBLE host task
+ */
 static void nimble_host_task(void *param)
 {
     ESP_LOGI(TAG, "BLE Host Task Started");
@@ -398,7 +416,9 @@ esp_err_t ble_init(const char *name)
     return ESP_OK;
 }
 
-// Common BLE send function for all characteristics
+/**
+ * @brief Send data to connected BLE client via notification
+ */
 static esp_err_t ble_send_data(uint16_t char_handle, const char *data, const char *data_type)
 {
     if (!ble_connected) {

@@ -12,6 +12,9 @@ static bool proximity_sensor_write_register_bit(ProximitySensor* sensor, uint8_t
 
 // Public function implementations
 
+/**
+ * @brief Create proximity sensor instance
+ */
 ProximitySensor* proximity_sensor_create(uint8_t int_pin, uint8_t threshold, bool verbose) {
     ProximitySensor* sensor = (ProximitySensor*)malloc(sizeof(ProximitySensor));
     if (sensor == NULL) {
@@ -27,6 +30,9 @@ ProximitySensor* proximity_sensor_create(uint8_t int_pin, uint8_t threshold, boo
     return sensor;
 }
 
+/**
+ * @brief Destroy proximity sensor instance
+ */
 void proximity_sensor_destroy(ProximitySensor* sensor) {
     if (sensor == NULL) {
         return;
@@ -36,6 +42,9 @@ void proximity_sensor_destroy(ProximitySensor* sensor) {
     free(sensor);
 }
 
+/**
+ * @brief Initialize proximity sensor on I2C bus
+ */
 bool proximity_sensor_begin(ProximitySensor* sensor, i2c_master_bus_handle_t bus_handle) {
     if (sensor == NULL || bus_handle == NULL) {
         return false;
@@ -176,6 +185,9 @@ bool proximity_sensor_begin(ProximitySensor* sensor, i2c_master_bus_handle_t bus
     return true;
 }
 
+/**
+ * @brief Check if sensor is connected and operational
+ */
 bool proximity_sensor_is_connected(const ProximitySensor* sensor) {
     if (sensor == NULL) {
         return false;
@@ -183,6 +195,9 @@ bool proximity_sensor_is_connected(const ProximitySensor* sensor) {
     return sensor->connected;
 }
 
+/**
+ * @brief Read proximity sensor value
+ */
 uint8_t proximity_sensor_read(ProximitySensor* sensor) {
     if (sensor == NULL) {
         return 0;
@@ -203,6 +218,9 @@ uint8_t proximity_sensor_read(ProximitySensor* sensor) {
     return proximity;
 }
 
+/**
+ * @brief Clear proximity sensor interrupt
+ */
 void proximity_sensor_clear_interrupt(ProximitySensor* sensor) {
     if (sensor == NULL || sensor->dev_handle == NULL) {
         return;
@@ -213,6 +231,9 @@ void proximity_sensor_clear_interrupt(ProximitySensor* sensor) {
     i2c_master_transmit(sensor->dev_handle, &reg, 1, -1);
 }
 
+/**
+ * @brief Enable proximity sensor interrupt
+ */
 void proximity_sensor_enable_interrupt(ProximitySensor* sensor) {
     if (sensor == NULL) {
         return;
@@ -227,6 +248,9 @@ void proximity_sensor_enable_interrupt(ProximitySensor* sensor) {
     }
 }
 
+/**
+ * @brief Disable proximity sensor interrupt
+ */
 void proximity_sensor_disable_interrupt(ProximitySensor* sensor) {
     if (sensor == NULL) {
         return;
@@ -239,6 +263,9 @@ void proximity_sensor_disable_interrupt(ProximitySensor* sensor) {
     }
 }
 
+/**
+ * @brief Set proximity sensor gain
+ */
 bool proximity_sensor_set_gain(ProximitySensor* sensor, uint8_t gain) {
     if (sensor == NULL) {
         return false;
@@ -255,6 +282,9 @@ bool proximity_sensor_set_gain(ProximitySensor* sensor, uint8_t gain) {
     return proximity_sensor_write_register(sensor, APDS9960_CONTROL, control);
 }
 
+/**
+ * @brief Set proximity sensor LED drive strength
+ */
 bool proximity_sensor_set_led_drive(ProximitySensor* sensor, uint8_t drive) {
     if (sensor == NULL) {
         return false;
@@ -270,6 +300,9 @@ bool proximity_sensor_set_led_drive(ProximitySensor* sensor, uint8_t drive) {
     return proximity_sensor_write_register(sensor, APDS9960_CONTROL, control);
 }
 
+/**
+ * @brief Configure proximity sensor pulse length and count
+ */
 bool proximity_sensor_set_pulse(ProximitySensor* sensor, uint8_t pulse_length, uint8_t pulse_count) {
     if (sensor == NULL) {
         return false;
@@ -286,6 +319,9 @@ bool proximity_sensor_set_pulse(ProximitySensor* sensor, uint8_t pulse_length, u
 
 // Helper function implementations
 
+/**
+ * @brief Write value to proximity sensor register
+ */
 static bool proximity_sensor_write_register(ProximitySensor* sensor, uint8_t reg, uint8_t value) {
     if (sensor == NULL || sensor->dev_handle == NULL) {
         return false;
@@ -301,6 +337,9 @@ static bool proximity_sensor_write_register(ProximitySensor* sensor, uint8_t reg
     return (ret == ESP_OK);
 }
 
+/**
+ * @brief Read value from proximity sensor register
+ */
 static bool proximity_sensor_read_register(ProximitySensor* sensor, uint8_t reg, uint8_t* value) {
     if (sensor == NULL || sensor->dev_handle == NULL || value == NULL) {
         return false;
@@ -315,6 +354,9 @@ static bool proximity_sensor_read_register(ProximitySensor* sensor, uint8_t reg,
     return (ret == ESP_OK);
 }
 
+/**
+ * @brief Write bit mask to proximity sensor register
+ */
 static bool proximity_sensor_write_register_bit(ProximitySensor* sensor, uint8_t reg, uint8_t bit_mask, bool value) {
     uint8_t reg_value = 0;
     if (!proximity_sensor_read_register(sensor, reg, &reg_value)) {

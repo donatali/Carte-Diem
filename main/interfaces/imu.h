@@ -35,18 +35,62 @@ typedef struct {
     QueueHandle_t idle_event_queue;  // Queue to notify main task of idle events
 } ICM20948_t;
 
+/**
+ * @brief Initialize ICM20948 IMU sensor
+ */
 void icm20948_init(ICM20948_t *device, i2c_master_bus_handle_t bus_handle);
+
+/**
+ * @brief Read accelerometer data
+ */
 esp_err_t icm20948_read_accel(ICM20948_t *device);
+
+/**
+ * @brief Read gyroscope data
+ */
 esp_err_t icm20948_read_gyro(ICM20948_t *device);
+
+/**
+ * @brief Read magnetometer data
+ */
 esp_err_t icm20948_read_mag(ICM20948_t *device);
+
+/**
+ * @brief Set gyroscope full scale range (dps)
+ */
 esp_err_t icm20948_set_gyroDPS(ICM20948_t *device, uint32_t dps);
+
+/**
+ * @brief Set accelerometer full scale range (g)
+ */
 esp_err_t icm20948_set_accelG(ICM20948_t *device, uint8_t g);
 
-// New functions
+/**
+ * @brief Compute heading from magnetometer and accelerometer
+ */
 float icm20948_compute_heading(ICM20948_t *device);
+
+/**
+ * @brief Check if device is moving based on acceleration
+ */
 bool icm20948_is_moving(ICM20948_t *device);
-void icm20948_start_activity_monitor(ICM20948_t *device, QueueHandle_t idle_queue);
+
+/**
+ * @brief Track activity and detect idle state
+ */
 void icm20948_activity_task(ICM20948_t *device);
+
+/**
+ * @brief IMU monitoring task (runs as RTOS task)
+ */
 void icm20948_monitor_task(void *arg);
+
+/**
+ * @brief Select register bank on ICM20948
+ */
 esp_err_t icm20948_select_bank(ICM20948_t *dev, uint8_t bank);
+
+/**
+ * @brief Initialize AK09916 magnetometer
+ */
 esp_err_t icm20948_init_mag(ICM20948_t *dev);

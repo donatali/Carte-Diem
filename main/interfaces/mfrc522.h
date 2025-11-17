@@ -25,12 +25,21 @@ typedef struct {
     uint8_t uid_len;
 } mfrc522_t;
 
+/**
+ * @brief Initialize MFRC522 RFID reader over SPI
+ */
 esp_err_t mfrc522_init(mfrc522_t *dev, spi_host_device_t host,
                        gpio_num_t miso, gpio_num_t mosi, gpio_num_t sck,
                        gpio_num_t cs, gpio_num_t rst);
 
+/**
+ * @brief Read UID from RFID card in proximity
+ */
 esp_err_t mfrc522_read_uid(mfrc522_t *dev, uint8_t *uid, uint8_t *uid_len);
 
+/**
+ * @brief Perform soft reset of MFRC522 chip
+ */
 void mfrc522_reset(mfrc522_t *dev);
 
 #ifdef __cplusplus

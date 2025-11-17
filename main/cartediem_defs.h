@@ -1,0 +1,32 @@
+// === I2C: Proximity Sensor, IMU, ===
+#define SCL_PIN GPIO_NUM_9
+#define SDA_PIN GPIO_NUM_8
+
+#define PROXIMITY_INT_PIN GPIO_NUM_15
+#define PROXIMITY_THRESHOLD 30
+
+// === SPI: Payment ===
+#define MOSI_PIN GPIO_NUM_11
+#define SCK_PIN  GPIO_NUM_12
+#define MISO_PIN GPIO_NUM_13
+#define PAYMENT_CS_PIN   GPIO_NUM_10
+#define PAYMENT_RST_PIN  GPIO_NUM_14
+
+
+// === Pseudo SPI: Load Cells === 
+#define TOP_LOAD_DATA_PIN GPIO_NUM_38
+#define TOP_LOAD_CLK_PIN GPIO_NUM_39
+#define BOTTOM_LOAD_DATA_PIN GPIO_NUM_40
+#define BOTTOM_LOAD_CLK_PIN GPIO_NUM_41
+
+
+// === UART: Barcode scanner, Item RFID, Customer RFID ===
+#define BARCODE_TX_PIN GPIO_NUM_1
+#define BARCODE_RX_PIN GPIO_NUM_2
+
+#define ITEM_RFID_UART_PORT UART_NUM_2
+#define ITEM_RFID_TX_PIN GPIO_NUM_5
+#define ITEM_RFID_RX_PIN GPIO_NUM_16
+
+// === Other ===
+#define BUTTON_PIN GPIO_NUM_37

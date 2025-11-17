@@ -10,6 +10,10 @@ static float accel_magnitude_prev = 0.0f;
 /* -------------------------------------------------------------------------- */
 /* Timer callback for activity monitor                                        */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Timer callback for activity monitoring
+ */
 static void activity_timer_callback(TimerHandle_t xTimer)
 {
     ICM20948_t *dev = (ICM20948_t *)pvTimerGetTimerID(xTimer);
@@ -23,17 +27,27 @@ static void activity_timer_callback(TimerHandle_t xTimer)
 /* -------------------------------------------------------------------------- */
 /* I2C helpers                                                                */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Read multiple bytes from ICM20948 register
+ */
 static esp_err_t icm20948_read_bytes(ICM20948_t *device, uint8_t reg, uint8_t *data, size_t len)
 {
     return i2c_master_transmit_receive(device->dev_handle, &reg, 1, data, len, -1);
 }
 
+/**
+ * @brief Write single byte to ICM20948 register
+ */
 static esp_err_t icm20948_write_byte(ICM20948_t *device, uint8_t reg, uint8_t value)
 {
     uint8_t write_buf[2] = { reg, value };
     return i2c_master_transmit(device->dev_handle, write_buf, sizeof(write_buf), -1);
 }
 
+/**
+ * @brief Read 16-bit signed value from ICM20948
+ */
 static int16_t icm20948_read_int16(ICM20948_t *device, uint8_t reg_high)
 {
     uint8_t data[2];
@@ -44,6 +58,10 @@ static int16_t icm20948_read_int16(ICM20948_t *device, uint8_t reg_high)
 /* -------------------------------------------------------------------------- */
 /* Bank select                                                                */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Select register bank on ICM20948
+ */
 esp_err_t icm20948_select_bank(ICM20948_t *dev, uint8_t bank)
 {
     return icm20948_write_byte(dev, ICM20948_REG_BANK_SEL, bank);
@@ -52,6 +70,10 @@ esp_err_t icm20948_select_bank(ICM20948_t *dev, uint8_t bank)
 /* -------------------------------------------------------------------------- */
 /* Magnetometer init (AK09916 behind ICM-20948 I2C master)                    */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Initialize AK09916 magnetometer
+ */
 esp_err_t icm20948_init_mag(ICM20948_t *dev)
 {
     esp_err_t ret;
@@ -106,6 +128,10 @@ esp_err_t icm20948_init_mag(ICM20948_t *dev)
 /* -------------------------------------------------------------------------- */
 /* Main IMU init                                                              */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Initialize ICM20948 IMU sensor
+ */
 void icm20948_init(ICM20948_t *device, i2c_master_bus_handle_t bus_handle)
 {
     i2c_device_config_t dev_cfg = {
@@ -160,6 +186,10 @@ void icm20948_init(ICM20948_t *device, i2c_master_bus_handle_t bus_handle)
 /* -------------------------------------------------------------------------- */
 /* Heading computation                                                        */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Compute heading from magnetometer and accelerometer
+ */
 float icm20948_compute_heading(ICM20948_t *dev)
 {
     icm20948_read_mag(dev);
@@ -190,6 +220,10 @@ float icm20948_compute_heading(ICM20948_t *dev)
 /* -------------------------------------------------------------------------- */
 /* Motion detection                                                           */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Check if device is moving based on acceleration
+ */
 bool icm20948_is_moving(ICM20948_t *dev)
 {
     icm20948_read_accel(dev);
@@ -207,23 +241,10 @@ bool icm20948_is_moving(ICM20948_t *dev)
 /* -------------------------------------------------------------------------- */
 /* Activity monitor                                                           */
 /* -------------------------------------------------------------------------- */
-void icm20948_start_activity_monitor(ICM20948_t *dev, QueueHandle_t idle_queue)
-{
-    dev->idle_event_queue = idle_queue;
-    dev->idle_counter_ms  = 0;
-    dev->activity_timer   = xTimerCreate("ActivityTimer",
-                                         pdMS_TO_TICKS(1000),
-                                         pdTRUE,
-                                         (void *)dev,
-                                         activity_timer_callback);
-    if (dev->activity_timer != NULL) {
-        xTimerStart(dev->activity_timer, 0);
-        ESP_LOGI(TAG, "Activity monitor started");
-    } else {
-        ESP_LOGE(TAG, "Failed to create activity timer");
-    }
-}
 
+/**
+ * @brief Track activity and detect idle state
+ */
 void icm20948_activity_task(ICM20948_t *dev)
 {
     if (!icm20948_is_moving(dev)) {
@@ -240,6 +261,10 @@ void icm20948_activity_task(ICM20948_t *dev)
 /* -------------------------------------------------------------------------- */
 /* IMU monitoring task (runs as dedicated RTOS task)                          */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief IMU monitoring task (runs as RTOS task)
+ */
 void icm20948_monitor_task(void *arg)
 {
     ICM20948_t *imu = (ICM20948_t *)arg;
@@ -256,6 +281,10 @@ void icm20948_monitor_task(void *arg)
 /* -------------------------------------------------------------------------- */
 /* Accel / Gyro read                                                          */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Read accelerometer data
+ */
 esp_err_t icm20948_read_accel(ICM20948_t *device)
 {
     icm20948_select_bank(device, ICM20948_BANK_0);
@@ -270,6 +299,9 @@ esp_err_t icm20948_read_accel(ICM20948_t *device)
     return ESP_OK;
 }
 
+/**
+ * @brief Read gyroscope data
+ */
 esp_err_t icm20948_read_gyro(ICM20948_t *device)
 {
     icm20948_select_bank(device, ICM20948_BANK_0);
@@ -287,6 +319,10 @@ esp_err_t icm20948_read_gyro(ICM20948_t *device)
 /* -------------------------------------------------------------------------- */
 /* Magnetometer read (EXT_SENS_DATA_00..07 -> AK09916)                       */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Read magnetometer data
+ */
 esp_err_t icm20948_read_mag(ICM20948_t *dev)
 {
     icm20948_select_bank(dev, ICM20948_BANK_0);
@@ -314,6 +350,10 @@ esp_err_t icm20948_read_mag(ICM20948_t *dev)
 /* -------------------------------------------------------------------------- */
 /* Full-scale settings                                                        */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * @brief Set gyroscope full scale range (dps)
+ */
 esp_err_t icm20948_set_gyroDPS(ICM20948_t *device, uint32_t dps)
 {
     uint8_t fs_sel = 0;
@@ -331,6 +371,9 @@ esp_err_t icm20948_set_gyroDPS(ICM20948_t *device, uint32_t dps)
     return ESP_OK;
 }
 
+/**
+ * @brief Set accelerometer full scale range (g)
+ */
 esp_err_t icm20948_set_accelG(ICM20948_t *device, uint8_t g)
 {
     uint8_t fs_sel = 0;

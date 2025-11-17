@@ -6,7 +6,7 @@ idf_component_register(
         "interfaces/mfrc522.c"
         "interfaces/ble_barcode_nimble.c"
         "interfaces/loadcells.c"
-        "interfaces/cart_rfid.c"
+        "interfaces/item_rfid.c"
         "interfaces/imu.c"
     INCLUDE_DIRS
         "."

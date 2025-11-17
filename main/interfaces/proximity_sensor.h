@@ -114,16 +114,60 @@ typedef struct ProximitySensor {
 } ProximitySensor;
 
 // Function declarations
+
+/**
+ * @brief Create proximity sensor instance
+ */
 ProximitySensor* proximity_sensor_create(uint8_t int_pin, uint8_t threshold, bool verbose);
+
+/**
+ * @brief Destroy proximity sensor instance
+ */
 void proximity_sensor_destroy(ProximitySensor* sensor);
+
+/**
+ * @brief Initialize proximity sensor on I2C bus
+ */
 bool proximity_sensor_begin(ProximitySensor* sensor, i2c_master_bus_handle_t bus_handle);
+
+/**
+ * @brief Check if sensor is connected and operational
+ */
 bool proximity_sensor_is_connected(const ProximitySensor* sensor);
+
+/**
+ * @brief Read proximity sensor value
+ */
 uint8_t proximity_sensor_read(ProximitySensor* sensor);
+
+/**
+ * @brief Clear proximity sensor interrupt
+ */
 void proximity_sensor_clear_interrupt(ProximitySensor* sensor);
+
+/**
+ * @brief Enable proximity sensor interrupt
+ */
 void proximity_sensor_enable_interrupt(ProximitySensor* sensor);
+
+/**
+ * @brief Disable proximity sensor interrupt
+ */
 void proximity_sensor_disable_interrupt(ProximitySensor* sensor);
+
+/**
+ * @brief Set proximity sensor gain
+ */
 bool proximity_sensor_set_gain(ProximitySensor* sensor, uint8_t gain);
+
+/**
+ * @brief Set proximity sensor LED drive strength
+ */
 bool proximity_sensor_set_led_drive(ProximitySensor* sensor, uint8_t drive);
+
+/**
+ * @brief Configure proximity sensor pulse length and count
+ */
 bool proximity_sensor_set_pulse(ProximitySensor* sensor, uint8_t pulse_length, uint8_t pulse_count);
 
 #endif

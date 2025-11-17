@@ -3,6 +3,9 @@
 #include <time.h>
 #include "esp_rom_sys.h"
 
+/**
+ * @brief Create and initialize a load cell handle
+ */
 LoadCell* load_cell_create(gpio_num_t clk_pin, gpio_num_t data_pin, uint8_t gain, bool type) {
 	LoadCell* cell = (LoadCell*) malloc(sizeof(LoadCell));
 	if (cell == NULL) {
@@ -16,11 +19,17 @@ LoadCell* load_cell_create(gpio_num_t clk_pin, gpio_num_t data_pin, uint8_t gain
 	return cell;
 }
 
+/**
+ * @brief Destroy and free a load cell handle
+ */
 void load_cell_destroy(LoadCell* lc) {
 	if (lc == NULL) return;
 	free(lc);
 }
 
+/**
+ * @brief Initialize load cell GPIO pins
+ */
 void load_cell_begin(LoadCell* lc) {
     // Configure CLK pin as output
     gpio_config_t io_conf = {
@@ -42,14 +51,23 @@ void load_cell_begin(LoadCell* lc) {
     load_cell_reset(lc);
 }
 
+/**
+ * @brief Set CLK pin low
+ */
 void load_cell_clk_low(LoadCell* lc) {
 	gpio_set_level(lc->clk_pin, 0);
 }
 
+/**
+ * @brief Set CLK pin high
+ */
 void load_cell_clk_high(LoadCell* lc) {
 	gpio_set_level(lc->clk_pin, 1);
 }
 
+/**
+ * @brief Reset HX711 load cell module
+ */
 void load_cell_reset(LoadCell* lc) {
 	load_cell_clk_high(lc);
     vTaskDelay(pdMS_TO_TICKS(1));
@@ -57,6 +75,9 @@ void load_cell_reset(LoadCell* lc) {
     vTaskDelay(pdMS_TO_TICKS(800)); // was 800
 }
 
+/**
+ * @brief Calibrate load cell to zero (tare)
+ */
 void load_cell_tare(LoadCell* lc) {
 	long acc = 0;
 	for (int i = 0; i < 3; i++) {
@@ -65,11 +86,17 @@ void load_cell_tare(LoadCell* lc) {
 	lc->tare_offset = (float)acc/3.0;
 }
 
+/**
+ * @brief Read raw 24-bit value from load cell
+ */
 int32_t load_cell_read_channel(LoadCell* lc) {
 	load_cell_read_channel_raw(lc); // discard to set up gain
 	return (load_cell_read_channel_raw(lc));
 }
 
+/**
+ * @brief Read raw 24-bit value without discarding first read
+ */
 int32_t load_cell_read_channel_raw(LoadCell* lc) {
 	while (gpio_get_level(lc->data_pin) == 1) vTaskDelay(pdMS_TO_TICKS(1));
 	load_cell_clk_low(lc);
@@ -93,6 +120,9 @@ int32_t load_cell_read_channel_raw(LoadCell* lc) {
     return (int32_t)val;
 }
 
+/**
+ * @brief Average multiple load cell readings
+ */
 int32_t load_cell_average_channel(LoadCell* lc){
 	int32_t buf[5];
 	for (uint8_t i = 0; i < 5; i++) {
@@ -123,6 +153,9 @@ int32_t load_cell_average_channel(LoadCell* lc){
 	return (sum / (end-start));
 }
 
+/**
+ * @brief Get weight reading in pounds
+ */
 float load_cell_display_pounds(LoadCell* lc) {
 	int32_t raw = load_cell_average_channel(lc);
 	float net = raw - lc->tare_offset;
@@ -143,6 +176,9 @@ float load_cell_display_pounds(LoadCell* lc) {
 	return pounds;
 }
 
+/**
+ * @brief Delay for specified microseconds
+ */
 void load_cell_delay_us(LoadCell* lc, uint32_t us) {
     // struct timespec start, now;
     // clock_gettime(CLOCK_MONOTONIC, &start);

@@ -9,6 +9,9 @@ static const uint8_t MANUAL_MODE_CMD[9]     = {0x7E,0x00,0x08,0x01,0x00,0x00,0xD
 static const uint8_t CONTINUOUS_MODE_CMD[9] = {0x7E,0x00,0x08,0x01,0x00,0x00,0xD6,0xAB,0xCD};
 static const uint8_t TRIGGER_CMD[9]         = {0x7E,0x00,0x08,0x01,0x00,0x02,0x01,0xAB,0xCD};
 
+/**
+ * @brief Initialize barcode scanner with UART configuration
+ */
 void barcode_init(barcode_t *scanner, uart_port_t uart_num, int tx_pin, int rx_pin, bool verbose) {
     scanner->uart_num = uart_num;
     scanner->tx_pin = tx_pin;
@@ -51,6 +54,9 @@ void barcode_init(barcode_t *scanner, uart_port_t uart_num, int tx_pin, int rx_p
     barcode_set_manual_mode(scanner);
 }
 
+/**
+ * @brief Send command to barcode scanner via UART
+ */
 static void send_cmd(barcode_t *scanner, const uint8_t *cmd, size_t len) {
     uart_write_bytes(scanner->uart_num, (const char*)cmd, len);
     esp_err_t ret = uart_wait_tx_done(scanner->uart_num, pdMS_TO_TICKS(100));
@@ -60,6 +66,9 @@ static void send_cmd(barcode_t *scanner, const uint8_t *cmd, size_t len) {
     }
 }
 
+/**
+ * @brief Set scanner to manual trigger mode
+ */
 void barcode_set_manual_mode(barcode_t *scanner) {
     send_cmd(scanner, MANUAL_MODE_CMD, sizeof(MANUAL_MODE_CMD));
     scanner->continuous_mode = false;
@@ -67,6 +76,9 @@ void barcode_set_manual_mode(barcode_t *scanner) {
         ESP_LOGI(TAG, "Manual mode ON");
 }
 
+/**
+ * @brief Set scanner to continuous scanning mode
+ */
 void barcode_set_continuous_mode(barcode_t *scanner) {
     send_cmd(scanner, CONTINUOUS_MODE_CMD, sizeof(CONTINUOUS_MODE_CMD));
     scanner->continuous_mode = true;
@@ -74,12 +86,18 @@ void barcode_set_continuous_mode(barcode_t *scanner) {
         ESP_LOGI(TAG, "Continuous mode ON");
 }
 
+/**
+ * @brief Trigger a single scan in manual mode
+ */
 void barcode_trigger_scan(barcode_t *scanner) {
     send_cmd(scanner, TRIGGER_CMD, sizeof(TRIGGER_CMD));
     if (scanner->verbose)
         ESP_LOGI(TAG, "Triggered scan");
 }
 
+/**
+ * @brief Read a complete barcode line from UART buffer
+ */
 bool barcode_read_line(barcode_t *scanner, char *buf, size_t max_len) {
     uint8_t ch;
     size_t idx = 0;
