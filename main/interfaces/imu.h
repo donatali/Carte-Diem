@@ -81,6 +81,11 @@ float icm20948_compute_heading(ICM20948_t *device);
 bool icm20948_is_moving(ICM20948_t *device);
 
 /**
+ * @brief Check if device is moving fast
+ */
+bool icm20948_is_fast_moving(ICM20948_t *dev)
+
+/**
  * @brief Track activity and detect idle state
  */
 void icm20948_activity_task(ICM20948_t *device);

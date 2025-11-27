@@ -9,11 +9,13 @@
 #define ENABLE_WEIGHT_MONITORING 1
 
 // 2. ADJUSTABLE PARAMETERS
-#define WEIGHT_CHANGE_THRESHOLD_LBS 0.5f    // Weight change threshold to trigger Item Verification
-#define CART_TRACKING_INTERVAL_MS 10000     // 10 seconds
-#define IMU_MOVING_THRESHOLD 0.1f           // Threshold (in g) to consider IMU as moving
-#define IMU_IDLE_TIME_MINUTES 5             // 5 minutes
 #define PROXIMITY_THRESHOLD 30              // Proximity sensor threshold value
+#define IMU_IDLE_TIME_MINUTES 5             // 5 minutes
+#define IMU_MOVING_THRESHOLD 0.1f           // Threshold (in g) to consider IMU as moving
+#define CART_TRACKING_INTERVAL_MS 10000     // 10 seconds
+#define IV_MAX_MOVING_THRESHOLD 0.2f        // Maximum IMU moving threshold to trigger item verification in response to weight change
+#define WEIGHT_CHANGE_THRESHOLD_LBS 0.5f    // Weight change threshold to trigger Item Verification
+
 
 // 3. PIN DEFINITIONS
 #define USING_DEVKIT 0  // 0 = Custom PCB, 1 = ESP Devkit
