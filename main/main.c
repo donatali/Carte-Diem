@@ -20,10 +20,13 @@ static QueueHandle_t imu_idle_evt_queue = NULL;
 static QueueHandle_t imu_motion_after_idle_queue = NULL;
 
 static TaskHandle_t weight_monitor_task_handle = NULL;
+static TaskHandle_t imu_monitor_task_handle = NULL;
 
 static bool continuous_mode = false;
 static bool payment_mode = false;
 static bool cart_tracking_active = false;
+
+static bool is_outdoor_mode = false;
 
 // ===== Weight Monitoring Variables =====
 static float last_cart_weight = 0.0f;
@@ -59,6 +62,9 @@ static void handle_imu_motion_after_idle_event(void);
 static void handle_ble_command(const char *data, uint16_t len);
 
 static void weight_monitor_task(void *arg);
+
+static void outdoor_setting();
+static void indoor_setting();
 
 void debug_led();
 
@@ -243,6 +249,18 @@ static void handle_ble_command(const char *data, uint16_t len)
         return;
     }
 
+    if (is_outdoor_mode) {
+        if(strcmp("INDOOR_MODE_ON", data) == 0){
+            ESP_LOGI(TAG, "BLE Command: Switching to INDOOR mode");
+            indoor_setting();
+            ble_send_misc_data("[MODE] INDOOR MODE ON");
+            is_outdoor_mode = false;
+            return;
+        }
+        return;
+    }
+
+    // Indoor mode commands
     switch (data[0]) {
         case 'T':  // "TARE_" commands
             if(strcmp("TARE_PRODUCE_WEIGHT", data) == 0 || strcmp("TARE_PROD_WEIGHT", data) == 0 || strcmp("T_PROD", data) == 0) {
@@ -463,7 +481,15 @@ static void handle_ble_command(const char *data, uint16_t len)
                 #endif
             }
             break;
-
+        case 'O':
+            if(strcmp("OUTDOOR_MODE_ON", data) == 0){
+                ESP_LOGI(TAG, "BLE Command: Switching to OUTDOOR mode");
+                outdoor_setting();
+                is_outdoor_mode = true;
+                ble_send_misc_data("[MODE] OUTDOOR MODE ON");
+                return;
+            }
+            break;
         default:
             ESP_LOGW(TAG, "BLE Command: Unknown command '%c' (full: %s)", data[0], data);
             ble_send_misc_data("[ERROR] UNKNOWN_CMD");
@@ -532,7 +558,7 @@ static void imu_setup(void){
     }
 
     // Create dedicated IMU monitoring task (1 second interval)
-    xTaskCreate(icm20948_monitor_task, "imu_monitor", 4096, &imu_sensor, 5, NULL);
+    xTaskCreate(icm20948_monitor_task, "imu_monitor", 4096, &imu_sensor, 5, &imu_monitor_task_handle);
     ESP_LOGI(TAG, "IMU monitoring task created (5-minute idle timeout)");
 }
 
@@ -735,6 +761,112 @@ static void weight_monitor_task(void *arg)
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+}
+
+// ===== Cart Outside =====
+static void outdoor_setting(){
+    ESP_LOGI(TAG, "Setting cart for outdoor use...");
+    ESP_LOGI(TAG, "Disabling all components except BLE...");
+
+    // Stop weight monitoring task if running
+    if (weight_monitor_task_handle != NULL) {
+        vTaskDelete(weight_monitor_task_handle);
+        weight_monitor_task_handle = NULL;
+        ESP_LOGI(TAG, "Weight monitoring task stopped");
+    }
+
+    // Stop IMU monitoring task
+    if (imu_monitor_task_handle != NULL) {
+        vTaskDelete(imu_monitor_task_handle);
+        imu_monitor_task_handle = NULL;
+        ESP_LOGI(TAG, "IMU monitoring task stopped");
+    }
+
+    // Stop cart tracking
+    #if ENABLE_CART_TRACKING
+    cart_tracking_active = false;
+    ESP_LOGI(TAG, "Cart tracking disabled");
+    #endif
+
+    // Disable proximity sensor interrupt
+    if (proximity_sensor != NULL) {
+        proximity_sensor_disable_interrupt(proximity_sensor);
+        ESP_LOGI(TAG, "Proximity sensor interrupt disabled");
+    }
+
+    // Disable proximity GPIO interrupt
+    gpio_isr_handler_remove(PROXIMITY_INT_PIN);
+    ESP_LOGI(TAG, "Proximity GPIO interrupt disabled");
+
+    // Disable button interrupt
+    gpio_isr_handler_remove(BUTTON_PIN);
+    ESP_LOGI(TAG, "Button interrupt disabled");
+
+    // Disable barcode scanner
+    barcode_set_manual_mode(&barcanner);
+    continuous_mode = false;
+    ESP_LOGI(TAG, "Barcode scanner disabled");
+
+    // Disable payment mode
+    payment_mode = false;
+    ESP_LOGI(TAG, "Payment mode disabled");
+
+    // Disable item verification (RFID)
+    #if ENABLE_ITEM_VERIFICATION
+    if (item_reader != NULL) {
+        item_rfid_deinit(item_reader);
+        item_reader = NULL;
+        ESP_LOGI(TAG, "Item RFID reader disabled");
+    }
+    #endif
+
+    ESP_LOGI(TAG, "✓ Outdoor mode activated - BLE only");
+}
+
+// ===== Cart Inside =====
+static void indoor_setting(){
+    ESP_LOGI(TAG, "Setting cart for indoor use...");
+    ESP_LOGI(TAG, "Re-enabling all components...");
+
+    // Re-enable IMU monitoring task
+    if (imu_monitor_task_handle == NULL) {
+        xTaskCreate(icm20948_monitor_task, "imu_monitor", 4096, &imu_sensor, 5, &imu_monitor_task_handle);
+        ESP_LOGI(TAG, "IMU monitoring task re-enabled");
+    }
+
+    // Re-enable barcode scanner
+    barcode_set_manual_mode(&barcanner);
+    continuous_mode = false;
+    ESP_LOGI(TAG, "Barcode scanner re-enabled");
+
+    // Re-enable button interrupt
+    gpio_isr_handler_add(BUTTON_PIN, button_isr, NULL);
+    ESP_LOGI(TAG, "Button interrupt re-enabled");
+
+    // Re-enable proximity sensor interrupt
+    if (proximity_sensor != NULL) {
+        proximity_sensor_enable_interrupt(proximity_sensor);
+        ESP_LOGI(TAG, "Proximity sensor interrupt re-enabled");
+    }
+
+    // Re-enable proximity GPIO interrupt
+    gpio_isr_handler_add(PROXIMITY_INT_PIN, proximity_isr, NULL);
+    ESP_LOGI(TAG, "Proximity GPIO interrupt re-enabled");
+
+    // Re-enable item verification (RFID)
+    #if ENABLE_ITEM_VERIFICATION
+    if (item_reader == NULL) {
+        item_reader = item_rfid_init(
+            ITEM_RFID_UART_PORT,
+            ITEM_RFID_TX_PIN,
+            ITEM_RFID_RX_PIN,
+            on_item_scan_complete
+        );
+        ESP_LOGI(TAG, "Item RFID reader re-enabled");
+    }
+    #endif
+
+    ESP_LOGI(TAG, "✓ Indoor mode activated - all components enabled");
 }
 
 // ===== Debug LED Blink =====
