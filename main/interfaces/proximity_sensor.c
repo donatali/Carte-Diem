@@ -226,8 +226,8 @@ void proximity_sensor_clear_interrupt(ProximitySensor* sensor) {
         return;
     }
 
-    // Clear interrupt by writing to AICLEAR register
-    uint8_t reg = APDS9960_AICLEAR;
+    // Clear interrupt by writing to PICLEAR register
+    uint8_t reg = APDS9960_PICLEAR;
     i2c_master_transmit(sensor->dev_handle, &reg, 1, -1);
 }
 

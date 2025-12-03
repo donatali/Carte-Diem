@@ -22,7 +22,6 @@ static QueueHandle_t imu_motion_after_idle_queue = NULL;
 static TaskHandle_t weight_monitor_task_handle = NULL;
 static TaskHandle_t imu_monitor_task_handle = NULL;
 
-static bool continuous_mode = false;
 static bool payment_mode = false;
 static bool cart_tracking_active = false;
 
@@ -77,18 +76,19 @@ static void setup(void)
     ble_setup();
 
     barcode_setup();
+    barcode_set_manual_mode(&barcanner);
     button_setup();
 
     i2c_setup();
 
-    proximity_setup();
-    proximity_interrupt_setup();
+    // proximity_setup();
+    // proximity_interrupt_setup();
 
     imu_setup(); 
 
     payment_setup();
     // produce_loadcell_setup();
-    // cart_loadcell_setup();
+    cart_loadcell_setup();
 
     #if ENABLE_ITEM_VERIFICATION
     item_rfid_setup();
@@ -135,27 +135,23 @@ void app_main(void)
         // button press
         if (xQueueReceive(button_evt_queue, &evt, pdMS_TO_TICKS(10)))
         {
-            // if (!continuous_mode) {
-                ESP_LOGI(TAG, "Button press detected → triggering manual scan");
-                barcode_trigger_scan(&barcanner);
-            // }
+            ESP_LOGI(TAG, "Button press detected → triggering manual scan");
+            barcode_trigger_scan(&barcanner);
         }
 
         // proximity interrupt
-        if (xQueueReceive(proximity_evt_queue, &evt, pdMS_TO_TICKS(10)))
-        {
-            uint8_t proximity_value = proximity_sensor_read(proximity_sensor);
-            ESP_LOGI(TAG, "Proximity interrupt → value: %d", proximity_value);
+        // if (xQueueReceive(proximity_evt_queue, &evt, pdMS_TO_TICKS(10)))
+        // {
+        //     uint8_t proximity_value = proximity_sensor_read(proximity_sensor);
+        //     ESP_LOGI(TAG, "Proximity interrupt → value: %d", proximity_value);
 
-            if (proximity_value > PROXIMITY_THRESHOLD && !continuous_mode) {
-                ESP_LOGI(TAG, "Proximity threshold exceeded → switching to continuous scan mode");
-                barcode_set_continuous_mode(&barcanner);
-                // barcode_trigger_scan(&barcanner);
-                continuous_mode = true;
-            }
+        //     if (proximity_value > PROXIMITY_THRESHOLD) {
+        //         ESP_LOGI(TAG, "Proximity threshold exceeded → triggering barcode scan");
+        //         barcode_trigger_scan(&barcanner);
+        //     }
 
-            proximity_sensor_clear_interrupt(proximity_sensor);
-        }
+        //     proximity_sensor_clear_interrupt(proximity_sensor);
+        // }
 
         // IMU idle for 5 minutes
         if (xQueueReceive(imu_idle_evt_queue, &evt, pdMS_TO_TICKS(10)))
@@ -185,14 +181,9 @@ void app_main(void)
             } else {
                 ESP_LOGW(TAG, "⚠ BLE not connected - barcode not sent");
             }
-
-            if (continuous_mode) {
-                ESP_LOGI(TAG, "Barcode read → switching back to manual scan mode");
-                barcode_set_manual_mode(&barcanner);
-                continuous_mode = false;
-            }
         }
 
+        
         #if ENABLE_CART_TRACKING
             // Cart tracking RFID burst read (every 10 seconds, only when IMU is moving)
             // Modify burst period with "CART_TRACKING_INTERVAL_MS" in cartediem_defs.h
@@ -267,12 +258,15 @@ static void handle_ble_command(const char *data, uint16_t len)
         case 'T':  // "TARE_" commands
             if(strcmp("TARE_PRODUCE_WEIGHT", data) == 0 || strcmp("TARE_PROD_WEIGHT", data) == 0 || strcmp("T_PROD", data) == 0) {
                 ESP_LOGI(TAG, "BLE Command: Taring produce load cell");
-                load_cell_tare(produce_load_cell);
+                // load_cell_tare(produce_load_cell);
+                load_cell_tare(cart_load_cell);
+                ESP_LOGI(TAG, "taring done");
                 break;
             }
             else if(strcmp("TARE_CART_WEIGHT", data) == 0 || strcmp("T_CART", data) == 0) {
                 ESP_LOGI(TAG, "BLE Command: Taring cart load cell");
                 load_cell_tare(cart_load_cell);
+                ESP_LOGI(TAG, "taring done");
                 break;
             }
             break;
@@ -280,7 +274,8 @@ static void handle_ble_command(const char *data, uint16_t len)
         case 'M': // "MEASURE_" commands
             if(strcmp("MEASURE_PRODUCE_WEIGHT", data) == 0 || strcmp("MEASURE_PROD_WEIGHT", data) == 0 || strcmp("M_PROD", data) == 0) {
                 ESP_LOGI(TAG, "BLE Command: Measuring produce weight");
-                float weight = load_cell_display_ounces(produce_load_cell);
+                // float weight = load_cell_display_ounces(produce_load_cell);
+                float weight = load_cell_display_ounces(cart_load_cell);
                 char weight_str[32];
                 snprintf(weight_str, sizeof(weight_str), "%.4f", weight);
                 ble_send_produce_weight(weight_str);
@@ -393,9 +388,9 @@ static void handle_ble_command(const char *data, uint16_t len)
                 ESP_LOGI(TAG, "Starting cart tracking data logging");
                 startSession();
 
-                // load_cell_tare(cart_load_cell);
+                load_cell_tare(cart_load_cell);
                 ESP_LOGI(TAG, "Load cell tared for tracking");
-                // last_cart_weight = load_cell_display_pounds(cart_load_cell);
+                last_cart_weight = load_cell_display_pounds(cart_load_cell);
                 
                 #if ENABLE_ITEM_VERIFICATION
                 item_rfid_scan(item_reader);
@@ -405,8 +400,8 @@ static void handle_ble_command(const char *data, uint16_t len)
                 #endif
 
                 // Create weight monitoring task (1 second interval)
-                // xTaskCreate(weight_monitor_task, "weight_monitor", 8192, NULL, 4, &weight_monitor_task_handle);
-                // ESP_LOGI(TAG, "Weight monitoring task created (threshold: %.4f lbs)", weight_change_threshold);
+                xTaskCreate(weight_monitor_task, "weight_monitor", 8192, NULL, 4, &weight_monitor_task_handle);
+                ESP_LOGI(TAG, "Weight monitoring task created (threshold: %.4f lbs)", weight_change_threshold);
 
                 cart_tracking_active = true;
                 #elif (!ENABLE_CART_TRACKING && ENABLE_WEIGHT_MONITORING)
@@ -589,7 +584,7 @@ static void proximity_interrupt_setup(void)
     gpio_config(&prox_io_conf);
 
     proximity_evt_queue = xQueueCreate(4, sizeof(uint32_t));
-    gpio_install_isr_service(0);
+    // gpio_install_isr_service(0);
     gpio_isr_handler_add(PROXIMITY_INT_PIN, proximity_isr, NULL);
     ESP_LOGI(TAG, "Proximity interrupt ready on GPIO %d", PROXIMITY_INT_PIN);
 }
@@ -671,6 +666,7 @@ static void cart_tracking_setup(void) {
 
 // ===== ISRs =====
 static uint32_t last_button_isr_time_ms = 0;
+static uint32_t last_proximity_isr_time_ms = 0;
 
 static void IRAM_ATTR button_isr(void *arg)
 {
@@ -680,25 +676,30 @@ static void IRAM_ATTR button_isr(void *arg)
     if (time_since_last >= BUTTON_COOLDOWN_MS) {
         last_button_isr_time_ms = now_ms;
         uint32_t evt = 1;
-        // continuous_mode = false;
         xQueueSendFromISR(button_evt_queue, &evt, NULL);
         ESP_EARLY_LOGI(TAG, "Button interrupt triggered");
     }
 }
 
 static void IRAM_ATTR proximity_isr(void *arg)
-{
-    uint32_t evt = 1;
-    xQueueSendFromISR(proximity_evt_queue, &evt, NULL);
-    ESP_EARLY_LOGI(TAG, "Proximity interrupt triggered");
+{      
+    ESP_EARLY_LOGI(TAG, "Proximity ISR triggered");
+    uint32_t now_ms = esp_timer_get_time() / 1000;
+    uint32_t time_since_last = now_ms - last_proximity_isr_time_ms;
+
+    if (time_since_last >= BUTTON_COOLDOWN_MS) {
+        last_proximity_isr_time_ms = now_ms;
+        uint32_t evt = 1;
+        xQueueSendFromISR(proximity_evt_queue, &evt, NULL);
+        ESP_EARLY_LOGI(TAG, "Proximity interrupt triggered");
+    }  
 }
 
 void on_item_scan_complete(const item_rfid_tag_t *tags, int count) {
     ESP_LOGI(TAG, "Found %d items in cart", count);
 
     // Get cart weight
-    // float cart_weight = load_cell_display_pounds(cart_load_cell);
-    float cart_weight = 5.0f; // Placeholder for testing
+    float cart_weight = load_cell_display_pounds(cart_load_cell);
 
     // Build verification string: "weight,num_tags,tag1,tag2,tag3,..."
     char verification_msg[512] = {0};
@@ -817,7 +818,6 @@ static void outdoor_setting(){
 
     // Disable barcode scanner
     barcode_set_manual_mode(&barcanner);
-    continuous_mode = false;
     ESP_LOGI(TAG, "Barcode scanner disabled");
 
     // Disable payment mode
@@ -849,7 +849,6 @@ static void indoor_setting(){
 
     // Re-enable barcode scanner
     barcode_set_manual_mode(&barcanner);
-    continuous_mode = false;
     ESP_LOGI(TAG, "Barcode scanner re-enabled");
 
     // Re-enable button interrupt

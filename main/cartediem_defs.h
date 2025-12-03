@@ -3,23 +3,23 @@
 #pragma once
 
 // 1. ENABLE FUNCTIONALITIES: 1 to enable, 0 to disable
-#define ENABLE_LED_DEBUG_STARTUP 1
+#define ENABLE_LED_DEBUG_STARTUP 0
 #define ENABLE_ITEM_VERIFICATION 1
 #define ENABLE_CART_TRACKING 1
-#define ENABLE_WEIGHT_MONITORING 0
+#define ENABLE_WEIGHT_MONITORING 1
 
 // 2. ADJUSTABLE PARAMETERS
 #define BUTTON_COOLDOWN_MS 1000             // Button press cooldown time
 
 #define PROXIMITY_THRESHOLD 30              // Proximity sensor threshold value
 #define IMU_IDLE_TIME_MINUTES 1             // 1 minutes
-#define IMU_MOVING_THRESHOLD 0.1f           // Threshold (in g) to consider IMU as moving
+#define IMU_MOVING_THRESHOLD 0.05f           // Threshold (in g) to consider IMU as moving
 
 #define CART_TRACKING_INTERVAL_MS 10000     // 10 seconds
 
 #define IV_WEIGHT_MONITOR_INTERVAL_MS 1000   // Interval to monitor weight changes for Item Verification
 #define IV_MAX_MOVING_THRESHOLD 0.2f        // Maximum IMU moving threshold to trigger item verification in response to weight change
-#define WEIGHT_CHANGE_THRESHOLD_LBS 0.5f    // Weight change threshold to trigger Item Verification
+#define WEIGHT_CHANGE_THRESHOLD_LBS 5.0f    // Weight change threshold to trigger Item Verification
 
 
 // 3. PIN DEFINITIONS
