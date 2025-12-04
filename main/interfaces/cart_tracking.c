@@ -138,11 +138,11 @@ void endSession(bool sendBLE) {
             fclose(f);
         } else {
             // Just print the log without sending
-            char line[128];
-            while (fgets(line, sizeof(line), f)) {
-                printf("%s", line);
-            }
-            fclose(f);
+            // char line[128];
+            // while (fgets(line, sizeof(line), f)) {
+            //     printf("%s", line);
+            // }
+            // fclose(f);
         }
     } else {
         ESP_LOGW(TAG, "Failed to open session log file");

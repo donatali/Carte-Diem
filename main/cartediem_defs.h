@@ -3,7 +3,7 @@
 #pragma once
 
 // 1. ENABLE FUNCTIONALITIES: 1 to enable, 0 to disable
-#define ENABLE_LED_DEBUG_STARTUP 1
+#define ENABLE_LED_DEBUG_STARTUP 0
 #define ENABLE_ITEM_VERIFICATION 1
 #define ENABLE_CART_TRACKING 1
 #define ENABLE_WEIGHT_MONITORING 1
@@ -25,7 +25,7 @@
 #define IV_TASK_PRIORITY 8
 
 #define IV_MAX_MOVING_THRESHOLD 0.2f        // Maximum IMU moving threshold to trigger item verification in response to weight change
-#define WEIGHT_CHANGE_THRESHOLD_LBS 5.0f    // Weight change threshold to trigger Item Verification
+#define WEIGHT_CHANGE_THRESHOLD_LBS 0.01f    // Weight change threshold to trigger Item Verification
 
 // loadcell tare task priority
 #define TARE_TASK_PRIORITY 10

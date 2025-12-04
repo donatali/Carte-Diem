@@ -23,6 +23,7 @@ static TaskHandle_t weight_monitor_task_handle = NULL;
 static TaskHandle_t imu_monitor_task_handle = NULL;
 static TaskHandle_t cart_tracking_task_handle = NULL;
 
+static bool continuous_mode = false;
 static bool payment_mode = false;
 static bool cart_tracking_active = false;
 
@@ -85,8 +86,8 @@ static void setup(void)
 
     i2c_setup();
 
-    proximity_setup();
-    proximity_interrupt_setup();
+    // proximity_setup();
+    // proximity_interrupt_setup();
 
     imu_setup(); 
 
@@ -144,18 +145,24 @@ void app_main(void)
         }
 
         // proximity interrupt
-        if (xQueueReceive(proximity_evt_queue, &evt, pdMS_TO_TICKS(10)))
-        {
-            uint8_t proximity_value = proximity_sensor_read(proximity_sensor);
-            ESP_LOGI(TAG, "Proximity interrupt → value: %d", proximity_value);
+        // if (xQueueReceive(proximity_evt_queue, &evt, pdMS_TO_TICKS(10)))
+        // {
+        //     // uint8_t proximity_value = proximity_sensor_read(proximity_sensor);
+        //     // ESP_LOGI(TAG, "Proximity interrupt → value: %d", proximity_value);
 
-            if (proximity_value > PROXIMITY_THRESHOLD) {
-                ESP_LOGI(TAG, "Proximity threshold exceeded → triggering barcode scan");
-                barcode_trigger_scan(&barcanner);
-            }
+        //     // if (proximity_value > PROXIMITY_THRESHOLD && !continuous_mode) {
+        //     //     ESP_LOGI(TAG, "Proximity threshold exceeded → switching to continuous scan mode");
+        //     //     barcode_set_continuous_mode(&barcanner);
+        //     //     continuous_mode = true;
+        //     // }
 
-            proximity_sensor_clear_interrupt(proximity_sensor);
-        }
+        //     ESP_LOGI(TAG, "Proximity interrupt → triggering manual scan");
+        //     // proximity_sensor_clear_interrupt(proximity_sensor);
+        //     // proximity_sensor_enable_interrupt(proximity_sensor);
+
+        //     barcode_trigger_scan(&barcanner);
+        // }
+
 
         // IMU idle for 5 minutes
         if (xQueueReceive(imu_idle_evt_queue, &evt, pdMS_TO_TICKS(10)))
@@ -185,6 +192,12 @@ void app_main(void)
             } else {
                 ESP_LOGW(TAG, "⚠ BLE not connected - barcode not sent");
             }
+
+            // if (continuous_mode) {
+            //     ESP_LOGI(TAG, "Barcode read → switching back to manual scan mode");
+            //     barcode_set_manual_mode(&barcanner);
+            //     continuous_mode = false;
+            // }
         }
 
         // Payment processing
@@ -370,6 +383,7 @@ static void handle_ble_command(const char *data, uint16_t len)
         case 'C': // Cart Tracking - txt file commands
             if(strcmp("CT_START", data) == 0) {
                 
+                ble_send_misc_data("[IMU] Moving");
 
                 #if ENABLE_CART_TRACKING
                 ESP_LOGI(TAG, "Starting cart tracking data logging");
@@ -381,8 +395,8 @@ static void handle_ble_command(const char *data, uint16_t len)
                 last_cart_weight = load_cell_display_pounds(cart_load_cell);
                 
                 #if ENABLE_ITEM_VERIFICATION
-                item_rfid_scan(item_reader);
-                ESP_LOGI(TAG, "Initial item scan performed for tracking session");
+                // item_rfid_scan(item_reader);
+                // ESP_LOGI(TAG, "Initial item scan performed for tracking session");
                 #else
                 ESP_LOGI(TAG, "Item Verification is DISABLED - skipping initial item scan for tracking session");
                 #endif
@@ -685,16 +699,17 @@ static void IRAM_ATTR button_isr(void *arg)
 
 static void IRAM_ATTR proximity_isr(void *arg)
 {      
-    ESP_EARLY_LOGI(TAG, "Proximity ISR triggered");
     uint32_t now_ms = esp_timer_get_time() / 1000;
     uint32_t time_since_last = now_ms - last_proximity_isr_time_ms;
+
+    ESP_EARLY_LOGI(TAG, "Proximity ISR triggered at %u ms", now_ms);
 
     if (time_since_last >= BUTTON_COOLDOWN_MS) {
         last_proximity_isr_time_ms = now_ms;
         uint32_t evt = 1;
         xQueueSendFromISR(proximity_evt_queue, &evt, NULL);
         ESP_EARLY_LOGI(TAG, "Proximity interrupt triggered");
-    }  
+    }
 }
 
 // RTOS Tasks...
